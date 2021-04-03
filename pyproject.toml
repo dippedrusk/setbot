@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "setbot"
+version = "0.1.1-alpha.0"
+description = "I respond to daily set scores with emoji"
+authors = ["Vasundhara <vasundhara131719@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+slack-sdk = "^3.4.2"
+pytz = "^2021.1"
+aiohttp = "^3.7.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+hypothesis = "^6.8.3"
+
+[tool.poetry.scripts]
+setbot = 'setbot:main'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
