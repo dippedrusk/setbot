@@ -1,14 +1,14 @@
-import os
 import logging
-import time
-import re
-from slackeventsapi import SlackEventAdapter
-from slack_sdk import WebClient
-import flask
-import random
-from datetime import datetime
-import pytz
 import operator
+import os
+import random
+import re
+from datetime import datetime
+
+import flask
+import pytz
+from slack_sdk import WebClient
+from slackeventsapi import SlackEventAdapter
 
 app = flask.Flask(__name__)
 slack_signing_secret = os.environ["SLACK_SIGNING_SECRET"]
@@ -28,9 +28,11 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 pacific = pytz.timezone('US/Pacific')
-set_score_regex = re.compile(r'(?:(?P<h>\d) hours )?(?:(?P<m>\d\d) minutes and )?(?P<s>\d\d\.\d\d\d) seconds')
-times = {}
-curr_date = datetime.now(pacific).date()
+set_score_regex = re.compile(r'(?:(?P<h>\d) hours )?'
+                             r'(?:(?P<m>\d\d) minutes and )?'
+                             r'(?P<s>\d\d\.\d\d\d) seconds')
+USER_TIMES = {}
+CURR_DATE = datetime.now(pacific).date()
 
 compliments = [':tada: Nice job',
                ":knife: You're killing it",
@@ -67,7 +69,7 @@ def create_leaderboard(times):
 
 
 def post_leaderboard(event: dict):
-    leaderboard = create_leaderboard(times)
+    leaderboard = create_leaderboard(USER_TIMES)
     channel_id = event['channel']
     client.chat_postMessage(
         channel=channel_id,
@@ -76,22 +78,24 @@ def post_leaderboard(event: dict):
     logger.info('Posted leaderboard')
 
 
+# pylint: disable=global-statement
 def update_date():
-    global curr_date, times
-    if curr_date != datetime.now(pacific).date():
-        curr_date = datetime.now(pacific).date()
-        times = {}
+    global CURR_DATE, USER_TIMES
+    if CURR_DATE != datetime.now(pacific).date():
+        CURR_DATE = datetime.now(pacific).date()
+        USER_TIMES = {}
         logger.info("New day - cleared leaderboard")
 
 
+# pylint: disable=global-statement
 def add_to_scores(time_in_seconds, event):
-    global times
+    global USER_TIMES
     user = event['user']
-    times[user] = time_in_seconds
+    USER_TIMES[user] = time_in_seconds
     logger.info('Added score to list of scores')
 
 
-def sub_minute_reaction(event: dict, time_in_seconds):
+def sub_minute_reaction(event: dict):
     channel_id = event['channel']
     thread_ts = event['ts']
     user = event['user']
@@ -129,7 +133,7 @@ def handle_message(event_data: dict):
         time_in_seconds = parse_score(match)
         add_to_scores(time_in_seconds, event)
         if time_in_seconds < 60:
-            sub_minute_reaction(event, time_in_seconds)
+            sub_minute_reaction(event)
     if 'leaderboard' in text:
         post_leaderboard(event)
     logger.debug('Handled the message')

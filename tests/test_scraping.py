@@ -1,55 +1,60 @@
-import setbot
 import random
+
 from hypothesis import given
-from hypothesis.strategies import text, dictionaries, floats, from_regex
+from hypothesis.strategies import dictionaries
+from hypothesis.strategies import floats
+from hypothesis.strategies import from_regex
+from hypothesis.strategies import text
+
+import setbot
 
 @given(from_regex(r'.*\d hours \d\d minutes and \d\d\.\d\d\d seconds.*', fullmatch=False))
 def test_match_h_m_s(time):
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert m.group('h'), "hours not matched"
-    assert m.group('m'), "minutes not matched"
-    assert m.group('s'), "seconds not matched"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert match.group('h'), "hours not matched"
+    assert match.group('m'), "minutes not matched"
+    assert match.group('s'), "seconds not matched"
     time = '0 hours 00 minutes and 23.916 seconds'
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert m.group('h'), "hours not matched"
-    assert m.group('m'), "minutes not matched"
-    assert m.group('s'), "seconds not matched"
-    assert m.group('h') == '0', "hours match incorrect"
-    assert m.group('m') == '00', "minutes match incorrect"
-    assert m.group('s') == '23.916', "seconds match incorrect"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert match.group('h'), "hours not matched"
+    assert match.group('m'), "minutes not matched"
+    assert match.group('s'), "seconds not matched"
+    assert match.group('h') == '0', "hours match incorrect"
+    assert match.group('m') == '00', "minutes match incorrect"
+    assert match.group('s') == '23.916', "seconds match incorrect"
 
 @given(from_regex(r'.*\d\d minutes and \d\d\.\d\d\d seconds.*', fullmatch=False))
 def test_match_m_s(time):
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert not m.group('h'), "hours matched"
-    assert m.group('m'), "minutes not matched"
-    assert m.group('s'), "seconds not matched"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert not match.group('h'), "hours matched"
+    assert match.group('m'), "minutes not matched"
+    assert match.group('s'), "seconds not matched"
     time = '00 minutes and 23.916 seconds'
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert not m.group('h'), "hours matched"
-    assert m.group('m'), "minutes not matched"
-    assert m.group('s'), "seconds not matched"
-    assert m.group('m') == '00', "minutes match incorrect"
-    assert m.group('s') == '23.916', "seconds match incorrect"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert not match.group('h'), "hours matched"
+    assert match.group('m'), "minutes not matched"
+    assert match.group('s'), "seconds not matched"
+    assert match.group('m') == '00', "minutes match incorrect"
+    assert match.group('s') == '23.916', "seconds match incorrect"
 
 @given(from_regex(r'.*\d\d\.\d\d\d seconds.*', fullmatch=False))
 def test_match_s(time):
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert not m.group('h'), "hours matched"
-    assert not m.group('m'), "minutes matched"
-    assert m.group('s'), "seconds not matched"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert not match.group('h'), "hours matched"
+    assert not match.group('m'), "minutes matched"
+    assert match.group('s'), "seconds not matched"
     time = '23.916 seconds'
-    m = setbot.match_score(time)
-    assert m, "no match"
-    assert not m.group('h'), "hours matched"
-    assert not m.group('m'), "minutes matched"
-    assert m.group('s'), "seconds not matched"
-    assert m.group('s') == '23.916', "seconds match incorrect"
+    match = setbot.match_score(time)
+    assert match, "no match"
+    assert not match.group('h'), "hours matched"
+    assert not match.group('m'), "minutes matched"
+    assert match.group('s'), "seconds not matched"
+    assert match.group('s') == '23.916', "seconds match incorrect"
 
 @given(from_regex(r'.*\d hours \d\d minutes and \d\d\.\d\d\d seconds.*', fullmatch=False))
 def test_parse_h_m_s(time):
@@ -92,50 +97,64 @@ def test_regex_parsing(set_score):
     assert score >= 0.0
 
 def test_empty_leaderboard():
-    lb = setbot.create_leaderboard({})
-    assert lb == 'LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({})
+    assert leaderboard == 'LEADERBOARD :trophy:\n'
 
 def test_leaderboard_one():
-    lb = setbot.create_leaderboard({'Warbler': 14.872})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Warbler': 14.872})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n')
 
 def test_leaderboard_two_nosort():
-    lb = setbot.create_leaderboard({'Warbler': 14.872, 'Trogon': 17.912})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Warbler': 14.872,
+                                             'Trogon': 17.912})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n')
 
 def test_leaderboard_two_sort():
-    lb = setbot.create_leaderboard({'Trogon': 17.912, 'Warbler': 14.872})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Trogon': 17.912,
+                                             'Warbler': 14.872})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n')
 
 def test_leaderboard_three_nosort():
-    lb = setbot.create_leaderboard({'Warbler': 14.872, 'Trogon': 17.912, 'Crane': 23.179})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Warbler': 14.872,
+                                             'Trogon': 17.912,
+                                             'Crane': 23.179})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n'
                   ':third_place_medal:: <@Crane> (23.179s)\n')
 
 def test_leaderboard_three_sort():
-    lb = setbot.create_leaderboard({'Crane': 23.179, 'Trogon': 17.912, 'Warbler': 14.872})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Crane': 23.179,
+                                             'Trogon': 17.912,
+                                             'Warbler': 14.872})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n'
                   ':third_place_medal:: <@Crane> (23.179s)\n')
 
 def test_leaderboard_many_nosort():
-    lb = setbot.create_leaderboard({'Warbler': 14.872, 'Trogon': 17.912, 'Crane': 23.179, 'Lapwing': 56.152, 'Thrush': 142.198})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Warbler': 14.872,
+                                             'Trogon': 17.912,
+                                             'Crane': 23.179,
+                                             'Lapwing': 56.152,
+                                             'Thrush': 142.198})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n'
                   ':third_place_medal:: <@Crane> (23.179s)\n')
 
 def test_leaderboard_many_sort():
-    lb = setbot.create_leaderboard({'Lapwing': 56.152, 'Thrush': 142.198, 'Crane': 23.179, 'Trogon': 17.912, 'Warbler': 14.872})
-    assert lb == ('LEADERBOARD :trophy:\n'
+    leaderboard = setbot.create_leaderboard({'Lapwing': 56.152,
+                                             'Thrush': 142.198,
+                                             'Crane': 23.179,
+                                             'Trogon': 17.912,
+                                             'Warbler': 14.872})
+    assert leaderboard == ('LEADERBOARD :trophy:\n'
                   ':first_place_medal:: <@Warbler> (14.872s)\n'
                   ':second_place_medal:: <@Trogon> (17.912s)\n'
                   ':third_place_medal:: <@Crane> (23.179s)\n')
