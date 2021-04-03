@@ -1,12 +1,29 @@
 version: 2.1
 orbs:
   linter: talkiq/linter@1
+  heroku: circleci/heroku@1.2.6
+
+jobs:
+  deploy:
+    executor: heroku/default
+    steps:
+      - checkout
+      - heroku/install
+      - heroku/deploy-via-git:
+          app-name: fiery-throated-metaltail
 
 workflows:
   run-jobs:
     jobs:
-    - linter/pre-commit:
-        python_version: 3.7.9
-        filters:
-          tags:
-            only: /.*/
+      - linter/pre-commit:
+          python_version: 3.7.10
+          filters:
+            tags:
+              only: /.*/
+      - deploy:
+          context: heroku-global
+          filters:
+            branches:
+              only: /main/
+          requires:
+            - linter/pre-commit
