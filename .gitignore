@@ -1,0 +1,5 @@
+*.swp
+dist/
+.hypothesis/
+*.log
+.DS_Store
