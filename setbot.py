@@ -2,17 +2,16 @@ import os
 import logging
 import time
 import re
-from slack_sdk.rtm.v2 import RTMClient
+from slackeventsapi import SlackEventAdapter
+from slack_sdk import WebClient
 import random
 from datetime import datetime
 import pytz
 import operator
 
-rtm = RTMClient(token=os.environ.get('SLACK_BOT_TOKEN'))
-pacific = pytz.timezone('US/Pacific')
-set_score_regex = re.compile(r'(?:(?P<h>\d) hours )?(?:(?P<m>\d\d) minutes and )?(?P<s>\d\d\.\d\d\d) seconds')
-times = {}
-curr_date = datetime.now(pacific).date()
+slack_signing_secret = os.environ["SLACK_SIGNING_SECRET"]
+slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events")
+client = WebClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 logger = logging.getLogger('setbot')
 logger.setLevel(logging.DEBUG)
@@ -25,6 +24,11 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
+
+pacific = pytz.timezone('US/Pacific')
+set_score_regex = re.compile(r'(?:(?P<h>\d) hours )?(?:(?P<m>\d\d) minutes and )?(?P<s>\d\d\.\d\d\d) seconds')
+times = {}
+curr_date = datetime.now(pacific).date()
 
 compliments = [':tada: Nice job',
                ":knife: You're killing it",
@@ -60,10 +64,10 @@ def create_leaderboard(times):
     return text
 
 
-def post_leaderboard(client: RTMClient, event: dict):
+def post_leaderboard(event: dict):
     leaderboard = create_leaderboard(times)
     channel_id = event['channel']
-    client.web_client.chat_postMessage(
+    client.chat_postMessage(
         channel=channel_id,
         text=leaderboard
     )
@@ -85,19 +89,19 @@ def add_to_scores(time_in_seconds, event):
     logger.info('Added score to list of scores')
 
 
-def sub_minute_reaction(client: RTMClient, event: dict, time_in_seconds):
+def sub_minute_reaction(event: dict, time_in_seconds):
     channel_id = event['channel']
     thread_ts = event['ts']
     user = event['user']
 
-    client.web_client.reactions_add(
+    client.reactions_add(
         channel=channel_id,
         name='fire',
         timestamp=thread_ts
     )
     logger.info('Added a fire emoji reaction')
     compliment = random.choice(compliments)
-    client.web_client.chat_postMessage(
+    client.chat_postMessage(
         channel=channel_id,
         text=f'{compliment}, <@{user}>!',
         thread_ts=thread_ts
@@ -109,8 +113,9 @@ def match_score(text):
     return set_score_regex.search(text)
 
 
-@rtm.on('message')
-def handle_message(client:RTMClient, event: dict):
+@slack_events_adapter.on('message')
+def handle_message(event_data: dict):
+    event = event_data['event']
     logger.debug('Handling a message')
     if 'subtype' in event:
         return
@@ -122,14 +127,16 @@ def handle_message(client:RTMClient, event: dict):
         time_in_seconds = parse_score(match)
         add_to_scores(time_in_seconds, event)
         if time_in_seconds < 60:
-            sub_minute_reaction(client, event, time_in_seconds)
+            sub_minute_reaction(event, time_in_seconds)
     if 'leaderboard' in text:
-        post_leaderboard(client, event)
+        post_leaderboard(event)
     logger.debug('Handled the message')
 
 
-def main():
-    rtm.start()
+@slack_events_adapter.on('error')
+def error_handler(err):
+    print("ERROR: " + str(err))
+    logger.error(str(err))
 
-if __name__ == "__main__":
-    main()
+
+slack_events_adapter.start(port=os.environ.get('PORT'))
