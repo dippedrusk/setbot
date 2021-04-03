@@ -1,1 +1,1 @@
-web: gunicorn setbot:slack_events_adapter
+web: gunicorn setbot:app

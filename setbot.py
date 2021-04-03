@@ -4,13 +4,15 @@ import time
 import re
 from slackeventsapi import SlackEventAdapter
 from slack_sdk import WebClient
+import flask
 import random
 from datetime import datetime
 import pytz
 import operator
 
+app = flask.Flask(__name__)
 slack_signing_secret = os.environ["SLACK_SIGNING_SECRET"]
-slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events")
+slack_events_adapter = SlackEventAdapter(slack_signing_secret, "/slack/events", app)
 client = WebClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 logger = logging.getLogger('setbot')
@@ -139,4 +141,9 @@ def error_handler(err):
     logger.error(str(err))
 
 
-slack_events_adapter.start(port=os.environ.get('PORT'))
+@app.route("/")
+def hello():
+    return "Hello, World! (aka Greetings, Vasundhara!)"
+
+if __name__ == '__main__':
+    app.run(debug=True)
